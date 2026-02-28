@@ -446,31 +446,6 @@ export default function PantryIQ() {
           </div>
         )}
 
-        {/* ── STEP: HISTORY ───────────────────────────────────────────── */}
-        {step === 'history' && account && (
-          <HistoryView
-            history={account.history}
-            onSelect={(saved) => {
-              setBasket(saved.basket);
-              setStep('results');
-            }}
-            onDelete={deleteFromHistory}
-            onClose={() => setStep('voice')}
-          />
-        )}
-
-        {/* ── STEP: PROFILE ───────────────────────────────────────────── */}
-        {step === 'profile' && account && (
-          <PreferencesModal
-            account={account}
-            onSave={(info, p, pr) => {
-              updateAccountInfo(info);
-              updateProfile(p);
-              updatePreferences(pr);
-            }}
-            onClose={() => setStep('voice')}
-          />
-        )}
 
         {/* ── STEP: VOICE ─────────────────────────────────────────────── */}
         {step === 'voice' && (
@@ -813,6 +788,38 @@ export default function PantryIQ() {
           </div>
         )}
       </main>
+
+      {/* Modals - Root Level for Z-Index */}
+      {step === 'history' && account && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="glass-card w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+            style={{ background: 'rgba(255, 255, 255, 0.98)', border: '1px solid var(--border)' }}>
+            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
+              <HistoryView
+                history={account.history}
+                onSelect={(saved) => {
+                  setBasket(saved.basket);
+                  setStep('results');
+                }}
+                onDelete={deleteFromHistory}
+                onClose={() => setStep('voice')}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {step === 'profile' && account && (
+        <PreferencesModal
+          account={account}
+          onSave={(info, p, pr) => {
+            updateAccountInfo(info);
+            updateProfile(p);
+            updatePreferences(pr);
+          }}
+          onClose={() => setStep('voice')}
+        />
+      )}
 
       {/* Footer */}
       <footer className="text-center py-8" style={{ color: 'var(--text-light)', fontSize: 13, position: 'relative', zIndex: 1 }}>

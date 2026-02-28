@@ -22,9 +22,9 @@ export default function PreferencesModal({ account, onSave, onClose }: Preferenc
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="glass-card w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200"
-                style={{ background: 'rgba(255, 255, 255, 0.98)', border: '1px solid var(--border)' }}>
+        <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto pt-12 md:pt-24">
+            <div className="glass-card w-full max-w-lg flex flex-col mb-8 shadow-2xl animate-in zoom-in-95 duration-200"
+                style={{ background: 'rgba(255, 255, 255, 0.98)', border: '1px solid var(--border)', maxHeight: 'none' }}>
 
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-100 shrink-0">
