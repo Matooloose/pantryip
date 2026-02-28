@@ -1,4 +1,4 @@
-// File: C:\Users\dell\Desktop\pantryiq\app\layout.tsx
+// File: /home/chosen333/Music/pantryip/app/layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

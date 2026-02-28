@@ -1,39 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
-import { extractProfileFromTranscript } from '@/lib/claude';
+import { extractProfileFromTranscript } from '@/lib/huggingface';
 import { z } from 'zod';
 
 const RequestSchema = z.object({
-  audio_base64: z.string().optional(),
-  transcript: z.string().optional(), // Allow direct text input for testing
+  transcript: z.string().min(1, 'Transcript is required'),
   household_size: z.number().min(1).max(20).default(1),
 });
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-
 export async function POST(req: NextRequest) {
+  const startTime = Date.now();
   try {
     const body = await req.json();
-    const { audio_base64, transcript: directTranscript, household_size } =
-      RequestSchema.parse(body);
+    const { transcript, household_size } = RequestSchema.parse(body);
 
-    let transcript: string;
-
-    if (directTranscript) {
-      transcript = directTranscript;
-    } else if (audio_base64) {
-      // Transcribe via Whisper-compatible endpoint
-      // Note: Anthropic doesn't have Whisper; use OpenAI Whisper or Web Speech API
-      // For the hackathon, the frontend uses Web Speech API and sends the transcript directly
-      transcript = await transcribeAudio(audio_base64);
-    } else {
-      return NextResponse.json(
-        { error: 'Either audio_base64 or transcript is required' },
-        { status: 400 }
-      );
-    }
+    console.log('\n🎤 ══════════════════════════════════════════════════════');
+    console.log('   PROCESS VOICE — Analyzing transcript');
+    console.log('══════════════════════════════════════════════════════');
+    console.log(`  📝 Transcript: "${transcript.substring(0, 80)}${transcript.length > 80 ? '...' : ''}"`);
+    console.log(`  👤 Household size: ${household_size}`);
+    console.log('  🤖 Sending to Hugging Face AI for analysis...');
+    console.log('  ⏳ This may take 10-20 seconds...\n');
 
     const profile = await extractProfileFromTranscript(transcript, household_size);
+
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`\n  ✅ Profile extracted in ${elapsed}s`);
+    console.log(`  🍽  Meals found: ${profile.meals.length}`);
+    console.log(`  🥗 Dietary preferences: ${profile.dietary_preferences?.join(', ') || 'none'}`);
+    console.log(`  ⚠️  Allergies: ${profile.allergies?.join(', ') || 'none'}`);
+    console.log('══════════════════════════════════════════════════════\n');
 
     return NextResponse.json({
       success: true,
@@ -41,7 +36,9 @@ export async function POST(req: NextRequest) {
       profile,
     });
   } catch (error) {
-    console.error('[process-voice] Error:', error);
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.error(`\n❌ PROCESS VOICE FAILED after ${elapsed}s`);
+    console.error('  Error:', error instanceof Error ? error.message : error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Processing failed' },
       { status: 500 }
@@ -49,37 +46,3 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/**
- * Transcribes audio using OpenAI Whisper API.
- * Falls back to a descriptive error if OPENAI_API_KEY is not set.
- */
-async function transcribeAudio(audioBase64: string): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      'OPENAI_API_KEY not configured. Use the text input or set up OpenAI Whisper.'
-    );
-  }
-
-  const audioBuffer = Buffer.from(audioBase64, 'base64');
-  const blob = new Blob([audioBuffer], { type: 'audio/webm' });
-
-  const formData = new FormData();
-  formData.append('file', blob, 'audio.webm');
-  formData.append('model', 'whisper-1');
-  formData.append('language', 'en');
-
-  const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}` },
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Whisper API error: ${error}`);
-  }
-
-  const data = await response.json();
-  return data.text;
-}

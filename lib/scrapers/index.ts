@@ -46,28 +46,91 @@ async function setCache(key: string, data: Product[]): Promise<void> {
  */
 export async function scrapeAllRetailers(ingredients: string[]): Promise<Product[]> {
   const allProducts: Product[] = [];
+  const totalTasks = ingredients.length * 2; // 2 stores per ingredient
+  let completedTasks = 0;
 
-  // Run all queries in parallel across all stores
+  console.log('\n╔══════════════════════════════════════════════════════════════╗');
+  console.log('║              🛒 PANTRYIQ PRICE SCRAPER                     ║');
+  console.log('╚══════════════════════════════════════════════════════════════╝');
+  console.log(`  📋 Ingredients to search: ${ingredients.length}`);
+  console.log(`  🏪 Stores: Pick n Pay, Shoprite`);
+  console.log(`  📊 Total scrape tasks: ${totalTasks}`);
+  console.log(`  ⏱  Started at: ${new Date().toLocaleTimeString()}\n`);
+
+  // Run all queries in parallel across all stores (with hard timeout per task)
+  const TASK_TIMEOUT_MS = 7000; // 7 second hard limit per scrape
+
+  const withTimeout = <T>(promise: Promise<T>, label: string): Promise<T> =>
+    Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error(`⏰ Timeout: ${label} took longer than ${TASK_TIMEOUT_MS / 1000}s`)), TASK_TIMEOUT_MS)
+      ),
+    ]);
+
   const tasks = ingredients.flatMap((ingredient) => [
-    scrapeWithCache(ingredient, 'picknpay', scrapePicknPay),
-    scrapeWithCache(ingredient, 'shoprite', scrapeShoprite),
+    withTimeout(
+      scrapeWithCache(ingredient, 'picknpay', scrapePicknPay),
+      `Pick n Pay → "${ingredient}"`
+    ).then((products) => {
+      completedTasks++;
+      const bar = progressBar(completedTasks, totalTasks);
+      const status = products.length > 0 ? `✅ ${products.length} products` : '⚠️  0 products (using fallback)';
+      console.log(`  ${bar} [${completedTasks}/${totalTasks}] Pick n Pay → "${ingredient}" → ${status}`);
+      return products;
+    }).catch((err) => {
+      completedTasks++;
+      const bar = progressBar(completedTasks, totalTasks);
+      console.log(`  ${bar} [${completedTasks}/${totalTasks}] Pick n Pay → "${ingredient}" → ⏰ Timed out, skipping`);
+      return [] as Product[];
+    }),
+    withTimeout(
+      scrapeWithCache(ingredient, 'shoprite', scrapeShoprite),
+      `Shoprite → "${ingredient}"`
+    ).then((products) => {
+      completedTasks++;
+      const bar = progressBar(completedTasks, totalTasks);
+      const status = products.length > 0 ? `✅ ${products.length} products` : '⚠️  0 products (using fallback)';
+      console.log(`  ${bar} [${completedTasks}/${totalTasks}] Shoprite   → "${ingredient}" → ${status}`);
+      return products;
+    }).catch((err) => {
+      completedTasks++;
+      const bar = progressBar(completedTasks, totalTasks);
+      console.log(`  ${bar} [${completedTasks}/${totalTasks}] Shoprite   → "${ingredient}" → ⏰ Timed out, skipping`);
+      return [] as Product[];
+    }),
   ]);
 
-  const results = await Promise.allSettled(tasks);
+  const results = await Promise.all(tasks);
 
-  for (const result of results) {
-    if (result.status === 'fulfilled') {
-      allProducts.push(...result.value);
-    }
+  for (const products of results) {
+    allProducts.push(...products);
   }
 
   // Deduplicate by id
   const seen = new Set<string>();
-  return allProducts.filter((p) => {
+  const deduped = allProducts.filter((p) => {
     if (seen.has(p.id)) return false;
     seen.add(p.id);
     return true;
   });
+
+  console.log('\n  ────────────────────────────────────────────');
+  console.log(`  📦 Total products found: ${allProducts.length}`);
+  console.log(`  🔄 After deduplication: ${deduped.length}`);
+  console.log(`  ✅ Completed: ${completedTasks}/${totalTasks} tasks`);
+  console.log(`  ⏱  Completed at: ${new Date().toLocaleTimeString()}`);
+  console.log('  ────────────────────────────────────────────\n');
+
+  return deduped;
+}
+
+function progressBar(current: number, total: number): string {
+  const width = 20;
+  const filled = Math.round((current / total) * width);
+  const empty = width - filled;
+  const pct = Math.round((current / total) * 100);
+  return `[${'█'.repeat(filled)}${'░'.repeat(empty)}] ${pct.toString().padStart(3)}%`;
 }
 
 async function scrapeWithCache(
@@ -78,7 +141,10 @@ async function scrapeWithCache(
   const cacheKey = `pantryiq:scrape:${store}:${query.toLowerCase().trim()}`;
 
   const cached = await getCached(cacheKey);
-  if (cached) return cached;
+  if (cached) {
+    console.log(`  💾 Cache hit: ${store} → "${query}" (${cached.length} products)`);
+    return cached;
+  }
 
   const products = await scraper(query);
   await setCache(cacheKey, products);

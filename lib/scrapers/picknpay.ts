@@ -18,10 +18,12 @@ const HEADERS = {
 export async function scrapePicknPay(query: string): Promise<Product[]> {
   try {
     const url = `${SEARCH_URL}${encodeURIComponent(query)}`;
+    console.log(`     🌐 PnP: Fetching "${query}"...`);
     const response = await axios.get(url, {
       headers: HEADERS,
-      timeout: 10000,
+      timeout: 5000,
     });
+    console.log(`     🌐 PnP: Response ${response.status} for "${query}"`);
 
     const $ = cheerio.load(response.data);
     const products: Product[] = [];
@@ -63,9 +65,14 @@ export async function scrapePicknPay(query: string): Promise<Product[]> {
     });
 
     // If live scraping yields results, great. Otherwise fall back to mock data.
-    return products.length > 0 ? products : getMockPicknPayProducts(query);
-  } catch {
-    // Network/parse failure — return demo-quality mock data
+    if (products.length > 0) {
+      console.log(`     ✅ PnP: Scraped ${products.length} live products for "${query}"`);
+      return products;
+    }
+    console.log(`     📦 PnP: No live results for "${query}", using mock data`);
+    return getMockPicknPayProducts(query);
+  } catch (err) {
+    console.log(`     ⚠️  PnP: Scrape failed for "${query}" — using mock data`);
     return getMockPicknPayProducts(query);
   }
 }

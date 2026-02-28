@@ -17,15 +17,18 @@ const SEARCH_API = `${BASE_URL}/c/za/all-products?q=`;
 export async function scrapeShoprite(query: string): Promise<Product[]> {
   try {
     const url = `${SEARCH_API}${encodeURIComponent(query)}&pageSize=20&sort=price-asc`;
+    console.log(`     🌐 Shoprite: Fetching "${query}"...`);
     const response = await axios.get(url, {
       headers: HEADERS,
-      timeout: 10000,
+      timeout: 5000,
     });
+    console.log(`     🌐 Shoprite: Response ${response.status} for "${query}"`);
 
     const data = response.data;
     const productList = data?.results || data?.products || [];
 
     if (!productList.length) {
+      console.log(`     📦 Shoprite: No live results for "${query}", using mock data`);
       return getMockShopriteProducts(query);
     }
 
@@ -52,7 +55,8 @@ export async function scrapeShoprite(query: string): Promise<Product[]> {
         scraped_at: new Date(),
       };
     }).filter((p: Product) => p.price > 0);
-  } catch {
+  } catch (err) {
+    console.log(`     ⚠️  Shoprite: Scrape failed for "${query}" — using mock data`);
     return getMockShopriteProducts(query);
   }
 }
