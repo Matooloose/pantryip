@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Mic, MicOff, ShoppingCart, Sparkles, ChevronDown, ChevronRight, Lightbulb, AlertCircle, CheckCircle2, ArrowRight, RotateCcw } from 'lucide-react';
+import { Mic, MicOff, ShoppingCart, Sparkles, ChevronDown, ChevronRight, Lightbulb, AlertCircle, CheckCircle2, ArrowRight, RotateCcw, Zap, Cpu } from 'lucide-react';
 import type { ShoppingBasket, UserProfile, BasketItem } from '@/types';
 
 type Step = 'voice' | 'budget' | 'loading' | 'results';
@@ -551,9 +551,23 @@ export default function PantryIQ() {
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--green-bg)' }}>
                   <CheckCircle2 size={18} style={{ color: 'var(--green)' }} />
                 </div>
-                <p className="text-xs uppercase tracking-widest font-medium" style={{ color: 'var(--green)' }}>
-                  Your Optimised Basket
-                </p>
+                <div className="flex items-center gap-3">
+                  <p className="text-xs uppercase tracking-widest font-medium" style={{ color: 'var(--green)' }}>
+                    Your Optimised Basket
+                  </p>
+                  {basket.optimization_method === 'ml_ranker' && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                      style={{ background: 'var(--accent-light)', color: 'white', opacity: 0.9 }}>
+                      <Zap size={10} fill="currentColor" /> ML Ranker
+                    </span>
+                  )}
+                  {basket.optimization_method?.includes('qwen') && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                      style={{ background: 'var(--purple-bg)', color: 'var(--purple)', border: '1px solid var(--purple)', opacity: 0.8 }}>
+                      <Cpu size={10} /> AI Optimized
+                    </span>
+                  )}
+                </div>
               </div>
               <h1 style={{ fontSize: 'clamp(1.8rem, 5vw, 2.8rem)', letterSpacing: '-0.04em' }}>
                 Shop smarter.<br /><span className="gradient-text">Save more.</span>

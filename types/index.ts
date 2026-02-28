@@ -49,8 +49,9 @@ export interface ShoppingBasket {
   savings_total: number;
   budget_remaining: number;
   store_breakdown: Record<string, number>;
-  generated_at: Date;
+  generated_at?: Date;
   tips: string[];
+  optimization_method?: 'ml_ranker' | 'qwen_llm' | 'qwen_llm_fallback';
 }
 
 export interface ScrapeResult {
