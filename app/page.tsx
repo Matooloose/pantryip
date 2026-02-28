@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Mic, MicOff, ShoppingCart, Sparkles, ChevronDown, ChevronRight, Lightbulb, AlertCircle, CheckCircle2, ArrowRight, RotateCcw, Zap, Cpu } from 'lucide-react';
+import { Mic, MicOff, ShoppingCart, Sparkles, ChevronDown, ChevronRight, Lightbulb, AlertCircle, CheckCircle2, ArrowRight, RotateCcw, Zap, Cpu, History, User } from 'lucide-react';
 import type { ShoppingBasket, UserProfile, BasketItem } from '@/types';
+import { usePantryStore } from '@/lib/store/usePantryStore';
+import HistoryView from '@/components/Profile/HistoryView';
+import PreferencesModal from '@/components/Profile/PreferencesModal';
 
-type Step = 'voice' | 'budget' | 'loading' | 'results';
+type Step = 'voice' | 'budget' | 'loading' | 'results' | 'history' | 'profile' | 'onboarding';
 
 interface ProcessedVoice {
   transcript: string;
@@ -190,6 +193,8 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function PantryIQ() {
+  const { account, isLoaded, updateProfile, addToHistory, deleteFromHistory, updatePreferences, updateAccountInfo, onboardUser } = usePantryStore();
+
   const [step, setStep] = useState<Step>('voice');
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -199,6 +204,23 @@ export default function PantryIQ() {
   const [basket, setBasket] = useState<ShoppingBasket | null>(null);
   const [error, setError] = useState<string>('');
   const [loadingStatus, setLoadingStatus] = useState('');
+
+  // Sync household size from store when loaded
+  useEffect(() => {
+    if (isLoaded && account) {
+      setHouseholdSize(account.profile.household_size);
+
+      // Force onboarding for new users
+      if (!account.preferences.is_onboarded) {
+        setStep('onboarding');
+      }
+    }
+  }, [isLoaded, account]);
+
+  const handleOnboard = useCallback((name: string, pass: string) => {
+    onboardUser(name, pass);
+    setStep('voice');
+  }, [onboardUser]);
 
   const recognitionRef = useRef<any>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -306,6 +328,15 @@ export default function PantryIQ() {
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       setBasket(data.basket);
+
+      // Save to history
+      addToHistory(data.basket);
+
+      // Update profile with detected meals if relevant
+      if (voiceResult.profile.meals.length > 0) {
+        updateProfile({ meals: voiceResult.profile.meals });
+      }
+
       setStep('results');
     } catch (err) {
       clearInterval(statusInterval);
@@ -329,18 +360,117 @@ export default function PantryIQ() {
             style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>
             <ShoppingCart size={17} color="white" strokeWidth={2.5} />
           </div>
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.03em', color: 'var(--text)' }}>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.03em', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text)' }}
+            onClick={() => setStep('voice')}>
             PantryIQ
           </span>
         </div>
-        <div className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full font-medium"
-          style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
-          <Sparkles size={12} />
-          Powered by Hugging Face 🤗
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setStep('history')}
+            className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full font-medium transition-all hover:bg-slate-100"
+            style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+          >
+            <History size={14} />
+            History
+          </button>
+          <button
+            onClick={() => setStep('profile')}
+            className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full font-medium transition-all hover:bg-slate-100"
+            style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+          >
+            <User size={14} />
+            Profile
+          </button>
+          <div className="hidden md:flex items-center gap-2 text-xs px-3 py-1.5 rounded-full font-medium"
+            style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
+            <Sparkles size={12} />
+            Hugging Face HF
+          </div>
         </div>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-10" style={{ position: 'relative', zIndex: 1 }}>
+
+        {/* ── STEP: ONBOARDING ────────────────────────────────────────── */}
+        {step === 'onboarding' && (
+          <div className="animate-slide-up flex flex-col items-center justify-center min-h-[60vh] text-center">
+            <div className="w-20 h-20 rounded-3xl bg-indigo-50 flex items-center justify-center text-indigo-500 mb-8">
+              <User size={40} strokeWidth={2.5} />
+            </div>
+            <h1 style={{ fontSize: 'clamp(2rem, 6vw, 3rem)', letterSpacing: '-0.04em', lineHeight: 1.1 }} className="mb-4">
+              Welcome to <span className="gradient-text">PantryIQ</span>
+            </h1>
+            <p className="text-slate-500 max-w-sm mb-10">
+              Let's get started. Please provide your name to personalize your experience.
+            </p>
+
+            <form
+              className="w-full max-w-sm space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const name = formData.get('name') as string;
+                const pass = formData.get('password') as string;
+                if (name.trim()) handleOnboard(name, pass);
+              }}
+            >
+              <div className="text-left">
+                <label className="text-xs font-bold text-slate-500 mb-1.5 block ml-1">What's your name?</label>
+                <input
+                  name="name"
+                  type="text"
+                  required
+                  placeholder="e.g. John Doe"
+                  className="w-full px-5 py-4 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-base font-medium shadow-sm hover:border-slate-300"
+                />
+              </div>
+              <div className="text-left">
+                <label className="text-xs font-bold text-slate-500 mb-1.5 block ml-1">Create a local password (optional)</label>
+                <input
+                  name="password"
+                  type="password"
+                  placeholder="••••••••"
+                  className="w-full px-5 py-4 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-base font-medium shadow-sm hover:border-slate-300"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full py-4 rounded-2xl font-bold text-base btn-primary shadow-xl shadow-indigo-200 flex items-center justify-center gap-2 group transition-all"
+              >
+                Get Started
+                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* ── STEP: HISTORY ───────────────────────────────────────────── */}
+        {step === 'history' && account && (
+          <HistoryView
+            history={account.history}
+            onSelect={(saved) => {
+              setBasket(saved.basket);
+              setStep('results');
+            }}
+            onDelete={deleteFromHistory}
+            onClose={() => setStep('voice')}
+          />
+        )}
+
+        {/* ── STEP: PROFILE ───────────────────────────────────────────── */}
+        {step === 'profile' && account && (
+          <PreferencesModal
+            account={account}
+            onSave={(info, p, pr) => {
+              updateAccountInfo(info);
+              updateProfile(p);
+              updatePreferences(pr);
+            }}
+            onClose={() => setStep('voice')}
+          />
+        )}
 
         {/* ── STEP: VOICE ─────────────────────────────────────────────── */}
         {step === 'voice' && (

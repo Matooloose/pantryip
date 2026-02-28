@@ -67,3 +67,25 @@ export interface VoiceProcessingResult {
   profile: UserProfile;
   confidence: number;
 }
+export interface SavedBasket {
+  id: string;
+  basket: ShoppingBasket;
+  name?: string;
+  saved_at: Date;
+}
+
+export interface UserAccount {
+  id: string;
+  profile: UserProfile;
+  history: SavedBasket[];
+  preferences: {
+    theme: 'light' | 'dark' | 'system';
+    default_currency: string;
+    show_alternatives: boolean;
+    is_onboarded: boolean;
+  };
+  name?: string;
+  password?: string;
+  created_at: Date;
+  updated_at: Date;
+}
