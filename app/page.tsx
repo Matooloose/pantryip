@@ -6,6 +6,7 @@ import type { ShoppingBasket, UserProfile, BasketItem } from '@/types';
 import { usePantryStore } from '@/lib/store/usePantryStore';
 import HistoryView from '@/components/Profile/HistoryView';
 import PreferencesModal from '@/components/Profile/PreferencesModal';
+import BackgroundSlideshow from '@/components/BackgroundSlideshow';
 
 type Step = 'voice' | 'budget' | 'loading' | 'results' | 'history' | 'profile' | 'onboarding';
 
@@ -351,6 +352,7 @@ export default function PantryIQ() {
       {/* Decorative blobs */}
       <div className="blob-1" />
       <div className="blob-2" />
+      <BackgroundSlideshow />
 
       {/* Header */}
       <header className="glass-card px-6 py-4 flex items-center justify-between mx-4 mt-4"
@@ -456,7 +458,7 @@ export default function PantryIQ() {
               <h1 style={{ fontSize: 'clamp(2rem, 6vw, 3.2rem)', letterSpacing: '-0.04em', lineHeight: 1.05 }}>
                 Tell me what<br /><span className="gradient-text">you cook.</span>
               </h1>
-              <p className="mt-4 text-base" style={{ color: 'var(--text-muted)', maxWidth: 460 }}>
+              <p className="mt-4 text-base px-4 py-2.5 rounded-2xl" style={{ color: 'var(--text-muted)', maxWidth: 480, background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.4)' }}>
                 Speak naturally or type below. Mention your meals, ingredients, and how often you cook.
                 I'll build your personal shopping profile.
               </p>
@@ -508,13 +510,13 @@ export default function PantryIQ() {
                 </div>
               )}
               {!isRecording && !transcript && (
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>🎙️ Tap to start recording</p>
+                <p className="text-sm px-4 py-1.5 rounded-full" style={{ color: 'var(--text-muted)', background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.4)' }}>🎙️ Tap to start recording</p>
               )}
             </div>
 
             {/* Transcript / manual input */}
             <div>
-              <label className="text-xs uppercase tracking-widest block mb-2 font-medium" style={{ color: 'var(--text-muted)' }}>
+              <label className="text-xs uppercase tracking-widest inline-block mb-2 font-medium px-4 py-1.5 rounded-full" style={{ color: 'var(--text-muted)', background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.5)' }}>
                 📝 Your meals & ingredients {transcript ? '(recorded)' : '(or type here)'}
               </label>
               <textarea
@@ -553,7 +555,7 @@ export default function PantryIQ() {
             <h1 style={{ fontSize: 'clamp(1.8rem, 5vw, 3rem)', letterSpacing: '-0.04em' }}>
               Set your <span className="gradient-text">budget.</span>
             </h1>
-            <p className="mt-3 mb-8" style={{ color: 'var(--text-muted)' }}>
+            <p className="mt-3 mb-8 px-4 py-2.5 rounded-2xl inline-block" style={{ color: 'var(--text-muted)', background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.4)' }}>
               I found <strong style={{ color: 'var(--accent)' }}>{voiceResult.profile.meals.length} meals</strong> in your profile.
               Now tell me your weekly grocery budget.
             </p>
@@ -822,9 +824,9 @@ export default function PantryIQ() {
       )}
 
       {/* Footer */}
-      <footer className="text-center py-8" style={{ color: 'var(--text-light)', fontSize: 13, position: 'relative', zIndex: 1 }}>
-        <p style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}>PantryIQ</p>
-        <p className="mt-1">Fighting food inflation one basket at a time 🇿🇦</p>
+      <footer className="text-center py-8 flex flex-col items-center gap-2" style={{ color: 'var(--text)', fontSize: 13, position: 'relative', zIndex: 1 }}>
+        <p className="px-5 py-1.5 rounded-full" style={{ fontFamily: 'var(--font-display)', fontWeight: 600, background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.5)' }}>PantryIQ</p>
+        <p className="px-5 py-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.5)' }}>Fighting food inflation one basket at a time 🇿🇦</p>
       </footer>
     </div>
   );

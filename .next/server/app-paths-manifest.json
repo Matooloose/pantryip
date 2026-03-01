@@ -1,5 +1,4 @@
 {
   "/page": "app/page.js",
-  "/api/process-voice/route": "app/api/process-voice/route.js",
-  "/api/generate-basket/route": "app/api/generate-basket/route.js"
+  "/api/backgrounds/route": "app/api/backgrounds/route.js"
 }
